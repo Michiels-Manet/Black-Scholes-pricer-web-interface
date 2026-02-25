@@ -1,0 +1,59 @@
+﻿@page "/blackscholespricer"
+@using MudBlazor
+@using Pricer.Numerics
+
+Add your design for a B-S pricer & implied vol calculator using MudBlazor components here
+
+@code {
+
+    private OptionType optionType = OptionType.Call;
+
+    private double underlyingPrice = 100;
+    private double strike = 100;
+    private double interestRate = 0.05;
+    private double volatility = 0.2;
+    private double timeToMaturity = 1.0;
+
+    private double? price;
+    private string? errorMessage;
+
+    private double marketPrice = 10.0;
+    private double tolerance = 1e-8;
+    private int maxIterations = 100;
+    private double? impliedVol;
+    private double? bachelierImpliedVol;
+
+    private void CalculatePrice()
+    {
+        var blackScholesPricer = new BlackScholes(
+            optionType,
+            interestRate,
+            timeToMaturity,
+            volatility,
+            strike,
+            underlyingPrice
+        );
+
+        price = blackScholesPricer.Price();
+    }
+
+    private void ComputeImpliedVol()
+    {
+        impliedVol = ImpliedVolatilityCalculator.Compute(
+            optionType,
+            marketPrice,
+            interestRate,
+            timeToMaturity,
+            strike,
+            underlyingPrice,
+            0.2D,
+            tolerance,
+            maxIterations
+        );
+    }
+
+    private void ComputeBachelierImpliedVol()
+    {
+        bachelierImpliedVol = ImpliedVolatilityCalculator.BachelierImpliedVolATM(marketPrice, underlyingPrice, timeToMaturity, interestRate);
+    }
+}
