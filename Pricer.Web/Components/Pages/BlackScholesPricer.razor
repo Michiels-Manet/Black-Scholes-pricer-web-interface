@@ -2,7 +2,80 @@
 @using MudBlazor
 @using Pricer.Numerics
 
-Add your design for a B-S pricer & implied vol calculator using MudBlazor components here
+<MudPaper Class="pa-4 ma-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Black-Scholes Pricer</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" sm="6">
+            <MudSelect T="OptionType" Label="Option Type" @bind-Value="optionType">
+                <MudSelectItem Value="OptionType.Call">Call</MudSelectItem>
+                <MudSelectItem Value="OptionType.Put">Put</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Underlying Price" @bind-Value="underlyingPrice" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Strike" @bind-Value="strike" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Interest Rate" @bind-Value="interestRate" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Volatility" @bind-Value="volatility" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Time to Maturity" @bind-Value="timeToMaturity" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Market Price" @bind-Value="marketPrice" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="double" Label="Tolerance" @bind-Value="tolerance" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudNumericField T="int" Label="Max Iterations" @bind-Value="maxIterations" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row="true" Spacing="2" Class="mt-4">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CalculatePrice">
+            Compute BS Price
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="ComputeImpliedVol">
+            Compute BS Implied Vol
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Tertiary" OnClick="ComputeBachelierImpliedVol">
+            Compute Bachelier ATM Implied Vol
+        </MudButton>
+    </MudStack>
+
+    <MudDivider Class="my-4" />
+
+    <MudText Typo="Typo.h6">Results</MudText>
+
+    <MudText>Black-Scholes Price: @(price?.ToString("F6") ?? "-")</MudText>
+    <MudText>Black-Scholes Implied Vol: @(impliedVol?.ToString("F6") ?? "-")</MudText>
+    <MudText>Bachelier ATM Implied Vol: @(bachelierImpliedVol?.ToString("F6") ?? "-")</MudText>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-4">
+            @errorMessage
+        </MudAlert>
+    }
+</MudPaper>
+
 
 @code {
 

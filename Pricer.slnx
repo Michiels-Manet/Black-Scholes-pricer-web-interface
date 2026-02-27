@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Pricer.ConsoleTest/Pricer.ConsoleTest.csproj" Id="50e14394-513c-4728-98bf-3cb78c0ddc39" />
   <Project Path="Pricer.Numerics/Pricer.Numerics.csproj" />
   <Project Path="Pricer.Web/Pricer.Web.csproj" />
 </Solution>
