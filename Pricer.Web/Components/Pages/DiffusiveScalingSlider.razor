@@ -1,6 +1,7 @@
 ﻿@page "/diffusivescaling"
 @using Pricer.Numerics
 @using MudBlazor
+@using System.Linq
 
 <PageTitle>Diffusive Scaling</PageTitle>
 
@@ -98,6 +99,7 @@
         <MudText Typo="Typo.body2">Δt: @DeltaT.ToString("0.0000")</MudText>
         <MudText Typo="Typo.body2">Theoretical variance at time T: @TheoreticalVariance.ToString("0.0000")</MudText>
         <MudText Typo="Typo.body2">Empirical quadratic variation: @EmpiricalQV.ToString("0.0000")</MudText>
+        <MudText Typo="Typo.body2">Plotschaal: x@PlotScale.ToString("0.#")</MudText>
     </MudPaper>
 </MudContainer>
 
@@ -106,6 +108,9 @@
     private double Sigma = 1.0;
     private double Alpha = 1.0;
     private int NumberOfSteps = 100;
+
+    // Enkel voor de visualisatie van de grafiek
+    private double PlotScale = 5.0;
 
     private List<ChartSeries<double>> ChartSeries = new();
     private string[] ChartLabels = Array.Empty<string>();
@@ -157,8 +162,8 @@
         {
             new ChartSeries<double>
             {
-                Name = "Pad 1",
-                Data = path.Values
+                Name = $"Pad 1 (x{PlotScale:0.#})",
+                Data = path.Values.Select(x => PlotScale * x).ToArray()
             }
         };
 
@@ -168,6 +173,7 @@
             DeltaT,
             Alpha);
 
+        // Deze berekening blijft op de originele, niet-geschaalde data
         EmpiricalQV = DiffusiveScaling.EmpiricalQuadraticVariation(path);
         RegimeText = DiffusiveScaling.GetRegimeDescription(Alpha);
     }

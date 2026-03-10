@@ -1,6 +1,7 @@
 ﻿@page "/brownianmotion"
 @using Pricer.Numerics
 @using MudBlazor
+@using System.Linq
 
 <PageTitle>Brownian Motion</PageTitle>
 
@@ -8,7 +9,7 @@
     <MudText Typo="Typo.h4" GutterBottom="true">Brownian Motion</MudText>
 
     <MudText Typo="Typo.body1" Class="mb-4">
-        Simulatie van Brownian motion.
+        Simulatie van Brownian motion. (grafiek werd visueel geschaald)
     </MudText>
 
     <MudPaper Class="pa-4 mb-4">
@@ -86,6 +87,9 @@
     private int NumberOfSteps = 100;
     private int NumberOfPaths = 1;
 
+    // Alleen voor de visualisatie, niet voor de echte data
+    private double PlotScale = 10.0;
+
     private List<ChartSeries<double>> ChartSeries = new();
     private string[] ChartLabels = Array.Empty<string>();
 
@@ -127,13 +131,14 @@
         {
             ChartSeries.Add(new ChartSeries<double>
             {
-                Name = $"Pad {p + 1}",
-                Data = paths[p].Values
+                Name = $"Pad {p + 1} (x{PlotScale:0.#})",
+                Data = paths[p].Values.Select(x => PlotScale * x).ToArray()
             });
         }
 
         if (paths.Count > 0)
         {
+            // Berekening gebeurt op de originele data, niet op de geschaalde plotwaarden
             QuadraticVariation = Pricer.Numerics.BrownianMotion.ComputeQuadraticVariation(paths[0]);
         }
     }
