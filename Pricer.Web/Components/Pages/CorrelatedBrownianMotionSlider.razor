@@ -1,0 +1,184 @@
+@page "/correlatedbrownianmotion"
+@using Pricer.Numerics
+@using MudBlazor
+@using System.Linq
+
+<PageTitle>Correlated Brownian Motion</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" GutterBottom="true">Correlated Brownian Motions</MudText>
+
+    <MudText Typo="Typo.body1" Class="mb-1">
+        Simulatie van twee gecorreleerde Brownian motions met correlatiecoëfficiënt ρ.
+    </MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">
+        We genereren eerst twee onafhankelijke Brownian motions W₁ en W₂, en construeren daarna W₃ = ρW₁ + √(1-ρ²)W₂.
+    </MudText>
+
+    <MudPaper Class="pa-4 mb-4">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudNumericField T="double"
+                                 Label="Maturity T"
+                                 @bind-Value="Maturity"
+                                 Min="0.1"
+                                 Step="0.1"
+                                 Immediate="true"
+                                 Variant="Variant.Outlined"
+                                 Format="0.0##" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudText Typo="Typo.subtitle2">Aantal stappen</MudText>
+                <MudSlider T="int"
+                           Min="10"
+                           Max="1000"
+                           Step="10"
+                           Value="NumberOfSteps"
+                           ValueChanged="OnNumberOfStepsChanged"
+                           Immediate="true" />
+                <MudText Typo="Typo.body2">Steps: @NumberOfSteps</MudText>
+                <MudText Typo="Typo.body2">Δt = @DeltaT.ToString("0.0000")</MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudText Typo="Typo.subtitle2">Correlatiecoëfficiënt</MudText>
+                <MudSlider T="double"
+                           Min="-1"
+                           Max="1"
+                           Step="0.01"
+                           Value="Rho"
+                           ValueChanged="OnRhoChanged"
+                           Immediate="true" />
+                <MudText Typo="Typo.body2">ρ = @Rho.ToString("0.00")</MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="6" Class="d-flex align-center">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="GenerateNewIndependentPaths">
+                    Genereer nieuwe onafhankelijke paden
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Class="pa-4 mb-4">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">W₁ en W₃ op dezelfde figuur</MudText>
+
+        <MudChart T="double"
+                  ChartType="ChartType.Line"
+                  ChartSeries="@ChartSeries"
+                  XAxisLabels="@ChartLabels"
+                  Width="100%"
+                  Height="350px" />
+    </MudPaper>
+
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.subtitle1">Info</MudText>
+        <MudText Typo="Typo.body2">Maturity: @Maturity.ToString("0.###")</MudText>
+        <MudText Typo="Typo.body2">Aantal stappen: @NumberOfSteps</MudText>
+        <MudText Typo="Typo.body2">Δt: @DeltaT.ToString("0.0000")</MudText>
+        <MudText Typo="Typo.body2">Ingestelde correlatie ρ: @Rho.ToString("0.000")</MudText>
+        <MudText Typo="Typo.body2">Empirische correlatie van incrementen Corr(W₁, W₃): @EmpiricalCorrelationW1W3.ToString("0.000")</MudText>
+        <MudText Typo="Typo.body2">Empirische correlatie van incrementen Corr(W₂, W₃): @EmpiricalCorrelationW2W3.ToString("0.000")</MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private double Maturity = 1.0;
+    private int NumberOfSteps = 100;
+    private double Rho = 0.50;
+
+    // Alleen voor de visualisatie
+    private double PlotScale = 10.0;
+
+    // deze 2 onafhankelijke paden bewaren we, zodat W1 niet telkens verandert als rho verandert
+    private BrownianPath? W1;
+    private BrownianPath? W2;
+
+    // dit is het geconstrueerde gecorreleerde pad
+    private BrownianPath? W3;
+
+    private List<ChartSeries<double>> ChartSeries = new();
+    private string[] ChartLabels = Array.Empty<string>();
+
+    private double EmpiricalCorrelationW1W3;
+    private double EmpiricalCorrelationW2W3;
+
+    private double DeltaT => Maturity / NumberOfSteps;
+
+    protected override void OnInitialized()
+    {
+        GenerateNewIndependentPaths();
+    }
+
+    private Task OnNumberOfStepsChanged(int value)
+    {
+        NumberOfSteps = value;
+
+        // als het aantal stappen verandert, moeten we nieuwe onafhankelijke paden maken
+        GenerateNewIndependentPaths();
+        return Task.CompletedTask;
+    }
+
+    private Task OnRhoChanged(double value)
+    {
+        Rho = value;
+
+        // als rho verandert, willen we enkel W3 opnieuw construeren
+        UpdateCorrelatedPathOnly();
+        return Task.CompletedTask;
+    }
+
+    private void GenerateNewIndependentPaths()
+    {
+        var independent = Pricer.Numerics.CorrelatedBrownianMotion.GenerateIndependentPaths(
+            Maturity,
+            NumberOfSteps);
+
+        W1 = independent.W1;
+        W2 = independent.W2;
+
+        UpdateCorrelatedPathOnly();
+    }
+
+    private void UpdateCorrelatedPathOnly()
+    {
+        if (W1 is null || W2 is null)
+            return;
+
+        // W3 construeren uit dezelfde W1 en W2, zodat enkel het effect van rho zichtbaar is
+        W3 = Pricer.Numerics.CorrelatedBrownianMotion.ConstructCorrelatedPath(W1, W2, Rho);
+
+        int labelStep = Math.Max(1, NumberOfSteps / 10);
+        ChartLabels = new string[NumberOfSteps + 1];
+
+        for (int i = 0; i <= NumberOfSteps; i++)
+        {
+            ChartLabels[i] = (i % labelStep == 0)
+                ? (i * DeltaT).ToString("0.00")
+                : "";
+        }
+
+        ChartSeries = new List<ChartSeries<double>>
+        {
+            new ChartSeries<double>
+            {
+                Name = $"W1 (x{PlotScale:0.#})",
+                Data = W1.Values.Select(x => PlotScale * x).ToArray()
+            },
+            new ChartSeries<double>
+            {
+                Name = $"W3 (x{PlotScale:0.#})",
+                Data = W3.Values.Select(x => PlotScale * x).ToArray()
+            }
+        };
+
+        EmpiricalCorrelationW1W3 =
+            Pricer.Numerics.CorrelatedBrownianMotion.ComputeEmpiricalCorrelation(W1, W3);
+
+        EmpiricalCorrelationW2W3 =
+            Pricer.Numerics.CorrelatedBrownianMotion.ComputeEmpiricalCorrelation(W2, W3);
+    }
+}
